@@ -1,0 +1,7 @@
+flask
+firebase_admin
+pyrebase
+datetime
+collections
+json
+os

@@ -15,9 +15,12 @@ default_app = initialize_app(cred)
 db = firestore.client()
 COL_TELEMETRY = db.collection('telemetry')
 COL_BUFFER = db.collection('buffer')
-DATABASE_FORMAT = 'database_format.json'
+DATABASE_FORMAT = open('database_format.json', 'r')
 TJSON = './dataToCar.json'
+sensors = ["battery_current", "battery_voltage"]
 
+db_json = json.load(DATABASE_FORMAT)
+ 
 
 
 
@@ -30,7 +33,7 @@ def file_size(file_path):
         return os.stat(file_path)
 
 
-@app.route('/update', methods=['GET', 'POST'])
+@app.route('/document', methods=['PUT'])
 def update():
     """
         update() : Update document in Firestore collection with request body
@@ -38,28 +41,21 @@ def update():
         e.g. json={'id': '1', 'title': 'Write a blog post today'}
     """
     buffer = dict()
-
     dateTimeObj = datetime.now()
     timestampStr = dateTimeObj.strftime("%Y-%m-%d")
-    
     buffer = {"telemetry":{}}
-    #while int(file_size(TJSON)) < 10:
-    #    i = 0
-    time.sleep(30)
     with open(TJSON) as json_data:
         fromCar = json.load(json_data)
         buffer['telemetry'].update(fromCar)
-
     try:
         print("Updating buffer")
         COL_TELEMETRY.document(timestampStr).update(buffer['telemetry'])
         print("Data was successfully uploaded")
-        return update()
     except Exception as e:
         return f"An Error Occured: {e}"
 
 
-@app.route('/', methods=['GET','POST'])
+@app.route('/document', methods=['POST'])
 def create():
     """
         create() : Add document to Firestore collection with request body
@@ -69,45 +65,38 @@ def create():
     dateTimeObj = datetime.now()
     timestampStr = dateTimeObj.strftime("%Y-%m-%d")
     if not COL_TELEMETRY.document(timestampStr).get().exists:
-        buffer = dict()
-        
         try:
-            COL_TELEMETRY.document(timestampStr).set(buffer)
-            print("====Document created====")
-            return update()
+            COL_TELEMETRY.document(timestampStr).set({"Date": timestampStr})
+            for sensor in db_json.keys():
+                COL_TELEMETRY.document(timestampStr).collection(sensor).document("0").set({"seconds":{}})
+            return "Documents Created", 201
         except Exception as e:
-            return f"An Error Occured: {e}"
-    else:
-        return update()
+            return f"An Error Occured: {e}", 400
+    return "Document already exists", 200
 
 
-        
-
-
-@app.route('/get', methods=['GET'])
-def read():
+@app.route('/document/<date>', methods=['GET'])
+def read(date):
     """
         read() : Fetches documents from Firestore collection as JSON
         todo : Return document that matches query ID
         all_todos : Return all documents
     """
+    dateFormat = "%Y-%m-%d"
+
     try:
-        # Check if ID was passed to URL query
-        buffer_id = request.args.get('id')    
-        if buffer_id:
-            data = COL_BUFFER.document(buffer_id).get()
-            return jsonify(data.to_dict()), 200
-        else:
-            all_data = [doc.to_dict() for doc in COL_BUFFER.stream()]
-            return jsonify(all_data), 200
+        datetime.strptime(date, dateFormat)
+        # Check if ID was passed to URL query  
+
+        
+        data = COL_TELEMETRY.document(date).collection("battery_current").stream()
+
+        return jsonify(data.to_dict), 200
     except Exception as e:
-        return f"An Error Occured: {e}"
+        return f"An Error Occured: {e}", 404
 
 
-
-
-
-@app.route('/delete', methods=['GET', 'DELETE'])
+@app.route('/document', methods=['DELETE'])
 def delete():
     """
         delete() : Delete a document from Firestore collection
@@ -115,8 +104,6 @@ def delete():
     dateTimeObj = datetime.now()
     timestampStr = dateTimeObj.strftime("%Y-%m-%d")
     try:
-        # Check for ID in URL query
-
         COL_TELEMETRY.document(timestampStr).delete()
         return jsonify({"success": True}), 200
     except Exception as e:

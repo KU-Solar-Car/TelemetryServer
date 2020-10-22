@@ -17,11 +17,7 @@ db = firestore.client()
 COL_TELEMETRY = db.collection('telemetry')
 COL_BUFFER = db.collection('buffer')
 DATABASE_FORMAT = open('database_format.json', 'r')
-BUFFER = open('d.json', 'r')
-TJSON = './dataToCar.json'
 
-db_json = json.load(DATABASE_FORMAT)
-buffer_json = json.load(BUFFER)
 
 SENSORS = ["battery_current", "battery_temperature", "battery_voltage", "bms_fault", "gps_lat","gps_lon", "gps_speed", "gps_time",
 "gps_velocity_east", "gps_velocity_north", "gps_velocity_up", "motor_speed", "solar_current", "solar_voltage"]
@@ -76,7 +72,7 @@ def create():
     if not COL_TELEMETRY.document(timestampStr).get().exists:
         try:
             COL_TELEMETRY.document(timestampStr).set({"Date": timestampStr})
-            for sensor in db_json.keys():
+            for sensor in SENSORS:
                 COL_TELEMETRY.document(timestampStr).collection(sensor).document("0").set({})
             return "Documents Created", 201
         except Exception as e:
@@ -122,11 +118,10 @@ def read(date):
     dateFormat = "%Y-%m-%d"
 
     try:
-        # datetime.strptime(date, dateFormat)
         data = dict()
         
         collections = COL_TELEMETRY.document(date).collections()
-        for col, sensor in zip(collections, db_json.keys()):
+        for col, sensor in zip(collections, SENSORS):
             for doc in col.stream():
                 data[sensor] = doc.to_dict()
         return jsonify(data), 200

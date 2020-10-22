@@ -30,7 +30,7 @@ Creates the URL: https://ku-solar-car-b87af.appspot.com
 
 4. Post To Server (endpoint is `/car`)
 
-Make sure your POST Request body is in the following format with `timeInSecondsSinceMidnight` being the key to the values of each sensor at said time in seconds.  POST request can take multiple times in seconds at a time
+Make sure your POST Request body is in the following format with `timeInSecondsSinceMidnight` being the key to the values of each sensor at said time in seconds.  POST request can take multiple times in seconds at a time.  Make sure values are in the following order as well to ensure correct order of values.
 
 `{
     "timeInSecondsSinceMidnight": {

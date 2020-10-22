@@ -23,8 +23,8 @@ TJSON = './dataToCar.json'
 db_json = json.load(DATABASE_FORMAT)
 buffer_json = json.load(BUFFER)
 
-SENSORS = ["battery_voltage", "battery_current", "battery_temperature", "bms_fault", "gps_time", "gps_lat","gps_lon",
-"gps_velocity_east", "gps_velocity_north", "gps_velocity_up", "gps_speed", "solar_voltage", "solar_current", "motor_speed"]
+SENSORS = ["battery_current", "battery_temperature", "battery_voltage", "bms_fault", "gps_lat","gps_lon", "gps_speed", "gps_time",
+"gps_velocity_east", "gps_velocity_north", "gps_velocity_up", "motor_speed", "solar_current", "solar_voltage"]
 
 
 def file_size(file_path):
@@ -46,7 +46,6 @@ def update(date):
     timestampStr = dateTimeObj.strftime("%Y-%m-%d")
     collections = COL_TELEMETRY.document(date).collections()
     try:
-        print("Updating buffer")
         for col, sensor in zip(collections, SENSORS):
             data_per_collection = dict()
             for sec in buffer_json.keys():
@@ -78,11 +77,39 @@ def create():
         try:
             COL_TELEMETRY.document(timestampStr).set({"Date": timestampStr})
             for sensor in db_json.keys():
-                COL_TELEMETRY.document(timestampStr).collection(sensor).document("0").set({"seconds":{}})
+                COL_TELEMETRY.document(timestampStr).collection(sensor).document("0").set({})
             return "Documents Created", 201
         except Exception as e:
             return f"An Error Occured: {e}", 400
     return "Document already exists", 200
+
+
+@app.route('/car', methods=['GET', 'POST'])
+def fromCar():
+    now = datetime.now()
+    nowInSeconds = round((now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())
+    req_body = request.get_json()
+    dateTimeObj = datetime.now()
+    timestampStr = dateTimeObj.strftime("%Y-%m-%d")
+    if not COL_TELEMETRY.document(timestampStr).get().exists:
+        create()
+    collections = COL_TELEMETRY.document(timestampStr).collections()
+    try:
+        for col, sensor in zip(collections, SENSORS):
+            data_per_collection = dict()
+            for sec in req_body.keys():
+                data_per_timeframe = req_body[sec][sensor]["value"]
+                print(type(data_per_timeframe))
+                col.document("0").update({
+                    sec : data_per_timeframe
+                })
+        print("Data was successfully uploaded for time in seconds", nowInSeconds)
+        return "Success", 202
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return f"An Error Occured: {e}", 400
 
 
 @app.route('/document/<date>', methods=['GET'])

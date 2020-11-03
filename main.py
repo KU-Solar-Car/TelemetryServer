@@ -12,11 +12,13 @@ import sys
 app = Flask(__name__)
 # Initialize Firestore DB
 cred = credentials.Certificate('key.json')
+f = open('headerKey.json', 'r')
+headerKey = json.load(f)
 default_app = initialize_app(cred)
 db = firestore.client()
 COL_TELEMETRY = db.collection('telemetry')
 COL_BUFFER = db.collection('buffer')
-DATABASE_FORMAT = open('database_format.json', 'r')
+
 
 
 SENSORS = ["battery_current", "battery_temperature", "battery_voltage", "bms_fault", "gps_lat","gps_lon", "gps_speed", "gps_time",
@@ -30,34 +32,14 @@ def file_size(file_path):
     if os.path.isfile(file_path):
         return os.stat(file_path)
 
-
-@app.route('/document/<date>', methods=['PUT'])
-def update(date):
-    """
-        update() : Update document in Firestore collection with request body
-        Ensure you pass a custom ID as part of json body in post request
-        e.g. json={'id': '1', 'title': 'Write a blog post today'}
-    """
-    dateTimeObj = datetime.now()
-    timestampStr = dateTimeObj.strftime("%Y-%m-%d")
-    collections = COL_TELEMETRY.document(date).collections()
-    try:
-        for col, sensor in zip(collections, SENSORS):
-            data_per_collection = dict()
-            for sec in buffer_json.keys():
-                data_per_collection[sec] = buffer_json[sec][sensor]["value"]
-            col.document("0").update({
-                "seconds":
-                    data_per_collection
-                
-            })
-        print("Data was successfully uploaded")
-        return "Success", 202
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
-        return f"An Error Occured: {e}", 400
+@app.route('/', methods=["GET"])
+def default():
+    """default endpoint with info for server"""
+    return """KU Solar Car Telemetry Server
+    \n/car - Main endpoint to use for sending from Arduino, requires an authentication header
+    \n/get/<date in YYYY-MM-DD format> - get data for a certain day
+    \n/create - create a table with correct fields for all the sensors
+    """, 200
 
 
 @app.route('/document', methods=['POST'])
@@ -82,6 +64,9 @@ def create():
 
 @app.route('/car', methods=['GET', 'POST'])
 def fromCar():
+    auth = request.headers['Authentication']
+    if auth != headerKey["Authentication"]:
+        return f"An Error Occured: Authentication Failed", 401
     now = datetime.now()
     nowInSeconds = round((now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())
     req_body = request.get_json()
@@ -99,7 +84,6 @@ def fromCar():
                 col.document("0").update({
                     sec : data_per_timeframe
                 })
-        print("Data was successfully uploaded for time in seconds", nowInSeconds)
         return "Success", 202
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -108,7 +92,7 @@ def fromCar():
         return f"An Error Occured: {e}", 400
 
 
-@app.route('/document/<date>', methods=['GET'])
+@app.route('/get/<date>', methods=['GET'])
 def read(date):
     """
         read() : Fetches documents from Firestore collection as JSON
@@ -128,20 +112,6 @@ def read(date):
     except Exception as e:
         return f"An Error Occured: {e}", 404
 
-
-@app.route('/document', methods=['DELETE'])
-def delete():
-    """
-        delete() : Delete a document from Firestore collection
-    """
-    dateTimeObj = datetime.now()
-    timestampStr = dateTimeObj.strftime("%Y-%m-%d")
-    try:
-        COL_TELEMETRY.document(timestampStr).delete()
-        return jsonify({"success": True}), 200
-    except Exception as e:
-        return f"An Error Occured: {e}"
-port = int(os.environ.get('PORT', 8080))
 
 
 if __name__ == '__main__':

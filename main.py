@@ -79,7 +79,7 @@ def fromCar():
         for col, sensor in zip(collections, SENSORS):
             data_per_collection = dict()
             for sec in req_body.keys():
-                data_per_timeframe = req_body[sec][sensor]["value"]
+                data_per_timeframe = req_body[sec][sensor]
                 print(type(data_per_timeframe))
                 col.document("0").update({
                     sec : data_per_timeframe

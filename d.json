@@ -1,0 +1,33 @@
+{
+    "39055": {
+    "battery_voltage": "500",
+    "battery_current": "500",
+    "battery_temperature": "500",
+    "bms_fault": "1",
+    "gps_time": "500",
+    "gps_lat": "500",
+    "gps_lon": "500",
+    "gps_velocity_east":"500",
+    "gps_velocity_north": "500",
+    "gps_velocity_up": "500",
+    "gps_speed": "500",
+    "solar_voltage": "500",
+    "solar_current": "500",
+    "motor_speed": "500"
+}, "39060": {
+    "battery_voltage": "500",
+    "battery_current": "500",
+    "battery_temperature": "500",
+    "bms_fault": "1",
+    "gps_time": "500",
+    "gps_lat": "500",
+    "gps_lon": "500",
+    "gps_velocity_east":"500",
+    "gps_velocity_north": "500",
+    "gps_velocity_up": "500",
+    "gps_speed": "500",
+    "solar_voltage": "500",
+    "solar_current": "500",
+    "motor_speed": "500"
+}
+}

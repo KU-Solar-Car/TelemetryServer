@@ -17,8 +17,7 @@ headerKey = json.load(f)
 default_app = initialize_app(cred)
 db = firestore.client()
 COL_TELEMETRY = db.collection('telemetry')
-COL_BUFFER = db.collection('buffer')
-
+buffer = dict()
 
 
 SENSORS = ["battery_current", "battery_temperature", "battery_voltage", "bms_fault", "gps_lat","gps_lon", "gps_speed", "gps_time",
@@ -31,6 +30,29 @@ def file_size(file_path):
     """
     if os.path.isfile(file_path):
         return os.stat(file_path)
+
+
+def writeToFireBase(timeStamp):
+    """
+    This function will write to Firebase with the given buffer.
+    """
+    try:
+        collections = COL_TELEMETRY.document(timeStamp).collections()
+        for col, sensor in zip(collections, SENSORS):
+            for sec in buffer.keys():
+                data_per_timeframe = buffer[sec][sensor]
+                print(data_per_timeframe)
+                col.document("0").update({
+                    str(sec) : data_per_timeframe
+                })
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        print(e)
+
+
+
 
 @app.route('/', methods=["GET"])
 def default():
@@ -76,14 +98,13 @@ def fromCar():
         create()
     collections = COL_TELEMETRY.document(timestampStr).collections()
     try:
+        buffer[nowInSeconds] = {}
         for col, sensor in zip(collections, SENSORS):
-            data_per_collection = dict()
-            for sec in req_body.keys():
-                data_per_timeframe = req_body[sec][sensor]
-                print(type(data_per_timeframe))
-                col.document("0").update({
-                    sec : data_per_timeframe
-                })
+            if sensor in req_body.keys():
+                buffer[nowInSeconds][sensor] = req_body[sensor]
+        if len(buffer) > 2:
+            writeToFireBase(timestampStr)
+            buffer.clear()
         return "Success", 202
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()

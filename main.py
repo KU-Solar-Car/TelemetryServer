@@ -40,7 +40,7 @@ def writeToFireBase(timeStamp):
         collections = COL_TELEMETRY.document(timeStamp).collections()
         for col, sensor in zip(collections, SENSORS):
             for sec in buffer.keys():
-                data_per_timeframe = buffer[sec][sensor]
+                data_per_timeframe = int(buffer[sec][sensor])
                 print(data_per_timeframe)
                 col.document("0").update({
                     str(sec) : data_per_timeframe

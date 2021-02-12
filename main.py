@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template
 from firebase_admin import credentials, firestore, initialize_app
 import json
 from collections import OrderedDict
+from threading import Timer
 from datetime import datetime, timedelta, date
 import time
 import sys
@@ -18,7 +19,7 @@ default_app = initialize_app(cred)
 db = firestore.client()
 COL_TELEMETRY = db.collection('telemetry')
 buffer = dict()
-
+lastRead = dict()
 
 SENSORS = ["battery_current", "battery_temperature", "battery_voltage", "bms_fault", "gps_lat","gps_lon", "gps_speed", "gps_time",
 "gps_velocity_east", "gps_velocity_north", "gps_velocity_up", "motor_speed", "solar_current", "solar_voltage"]
@@ -102,10 +103,17 @@ def fromCar():
         for col, sensor in zip(collections, SENSORS):
             if sensor in req_body.keys():
                 buffer[nowInSeconds][sensor] = req_body[sensor]
-        if len(buffer) > 2:
+                lastRead[sensor] = req_body[sensor]
+        if len(buffer) > (15*12) : #check buffer size and if it is greater than threshold
             writeToFireBase(timestampStr)
             buffer.clear()
-        return "Success", 202
+            return "Success, buffer limit reached but data uploaded, buffer cleared", 202
+        if buffer[nowInSeconds] == {}:
+            countdownToBufferClear = Timer(60.0, writeToFireBase(timestampStr))
+            countdownToBufferClear.start()
+            buffer.clear()
+            return "Success, server timed out but data uploaded, buffer cleared", 202
+        return "Success, data added to buffer", 202
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -120,11 +128,9 @@ def read(date):
         todo : Return document that matches query ID
         all_todos : Return all documents
     """
-    dateFormat = "%Y-%m-%d"
-
+    # dateFormat = "%Y-%m-%d"
     try:
         data = dict()
-        
         collections = COL_TELEMETRY.document(date).collections()
         for col, sensor in zip(collections, SENSORS):
             for doc in col.stream():
@@ -132,6 +138,20 @@ def read(date):
         return jsonify(data), 200
     except Exception as e:
         return f"An Error Occured: {e}", 404
+
+@app.route("/recent", methods=["GET"])
+def recentData():
+    """
+    Return the most recent data set that was sent from the car
+    """
+    try:
+        data = dict()
+        for sensor in lastRead.keys():
+            data[sensor] = lastRead[sensor]            
+        return jsonify(data), 200
+    except Exception as e:
+        return f"An Error Occured: {e}", 404
+
 
 
 

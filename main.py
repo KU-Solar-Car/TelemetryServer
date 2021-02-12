@@ -62,6 +62,7 @@ def default():
     \n/car - Main endpoint to use for sending from Arduino, requires an authentication header.
     \n/get/<date in YYYY-MM-DD format> - get data for a certain day.
     \n/create - create a table with correct fields for all the sensors.
+    \n/recent - Get the most recent datapoints from the buffer
     """, 200
 
 

@@ -21,6 +21,9 @@ COL_TELEMETRY = db.collection('telemetry')
 buffer = dict()
 lastRead = dict()
 
+dateTimeObj = datetime.now()
+timestampStr = dateTimeObj.strftime("%Y-%m-%d")
+
 SENSORS = ["battery_current", "battery_temperature", "battery_voltage", "bms_fault", "gps_lat","gps_lon", "gps_speed", "gps_time",
 "gps_velocity_east", "gps_velocity_north", "gps_velocity_up", "motor_speed", "solar_current", "solar_voltage"]
 
@@ -33,12 +36,12 @@ def file_size(file_path):
         return os.stat(file_path)
 
 
-def writeToFireBase(timeStamp):
+def writeToFireBase():
     """
     This function will write to Firebase with the given buffer.
     """
     try:
-        collections = COL_TELEMETRY.document(timeStamp).collections()
+        collections = COL_TELEMETRY.document(timestampStr).collections()
         for col, sensor in zip(collections, SENSORS):
             for sec in buffer.keys():
                 data_per_timeframe = int(buffer[sec][sensor])
@@ -88,14 +91,13 @@ def create():
 
 @app.route('/car', methods=['GET', 'POST'])
 def fromCar():
+    countdownToBufferClear.start()
     auth = request.headers['Authentication']
     if auth != headerKey["Authentication"]:
         return f"An Error Occured: Authentication Failed", 401
-    now = datetime.now()
-    nowInSeconds = round((now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())
+    
     req_body = request.get_json()
-    dateTimeObj = datetime.now()
-    timestampStr = dateTimeObj.strftime("%Y-%m-%d")
+    nowInSeconds = round((now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())
     if not COL_TELEMETRY.document(timestampStr).get().exists:
         create()
     collections = COL_TELEMETRY.document(timestampStr).collections()
@@ -106,14 +108,10 @@ def fromCar():
                 buffer[nowInSeconds][sensor] = req_body[sensor]
                 lastRead[sensor] = req_body[sensor]
         if len(buffer) > (15*12) : #check buffer size and if it is greater than threshold
-            writeToFireBase(timestampStr)
+            writeToFireBase()
+            countdownToFireBase.cancel()
             buffer.clear()
             return "Success, buffer limit reached but data uploaded, buffer cleared", 202
-        if buffer[nowInSeconds] == {}:
-            countdownToBufferClear = Timer(60.0, writeToFireBase(timestampStr))
-            countdownToBufferClear.start()
-            buffer.clear()
-            return "Success, server timed out but data uploaded, buffer cleared", 202
         return "Success, data added to buffer", 202
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()

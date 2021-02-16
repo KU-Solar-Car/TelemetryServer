@@ -38,20 +38,20 @@ Make sure your POST Request body is in the following format with `timeInSecondsS
 ```json
 
     {
-        "battery_voltage": "400",
-        "battery_current": "400",
-        "battery_temperature": "400",
-        "bms_fault": "1",
-        "gps_time": "400",
-        "gps_lat": "400",
-        "gps_lon": "400",
-        "gps_velocity_east":"400",
-        "gps_velocity_north": "400",
-        "gps_velocity_up": "400",
-        "gps_speed": "400",
-        "solar_voltage": "400",
-        "solar_current": "400",
-        "motor_speed": "400"
+        "battery_voltage": 400,
+        "battery_current": 400,
+        "battery_temperature": 400,
+        "bms_fault": 1,
+        "gps_time": 400,
+        "gps_lat": 400,
+        "gps_lon": 400,
+        "gps_velocity_east":400,
+        "gps_velocity_north": 400,
+        "gps_velocity_up": 400,
+        "gps_speed": 400,
+        "solar_voltage": 400,
+        "solar_current": 400,
+        "motor_speed": 400
 }
 
 ```

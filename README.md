@@ -2,7 +2,7 @@
 
 ## KU Solar Car
 
-##Initial setup
+## Initial setup
 [Link to Medium Article on Deploying](https://medium.com/@dmahugh_70618/deploying-a-flask-app-to-google-app-engine-faa883b5ffab)
 
 
@@ -23,62 +23,36 @@ In this case 'MY-PROJECT-ID' is ku-solar-car-b87af
 ##### `entrypoint: gunicorn -b :8080 main:app`
 
 
-####Command to push your changes to GCloud (like git push)
+#### Command to push your changes to GCloud (like git push)
 3. Then to deploy
 `gcloud app deploy`
 
 Creates the URL: https://ku-solar-car-b87af.appspot.com
 
 
-####Interacting with server
+#### Interacting with server
 4. Post To Server (endpoint is `/car`)
 
 Make sure your POST Request body is in the following format with `timeInSecondsSinceMidnight` being the key to the values of each sensor at said time in seconds.  POST request can take multiple times in seconds at a time.  Make sure values are in the following order as well to ensure correct order of values.
 
-`{
-    "timeInSecondsSinceMidnight": {
-        "battery_voltage": {
-            "value":"500"
-        },
-        "battery_current": {
-            "value":"500"
-        },
-        "battery_temperature": {
-            "value":"500"
-        },
-        "bms_fault": {
-            "value":"1"
-        },
-        "gps_time": {
-            "value":"500"
-        },
-        "gps_lat": {
-            "value":"500"
-        },
-        "gps_lon": {
-            "value":"500"
-        },
-        "gps_velocity_east": {
-            "value":"500"
-        },
-        "gps_velocity_north": {
-            "value":"500"
-        },
-        "gps_velocity_up": {
-            "value":"500"
-        },
-        "gps_speed": {
-            "value":"500"
-        },
-        "solar_voltage": {
-            "value":"500"
-        },
-        "solar_current": {
-            "value":"500"
-        },
-        "motor_speed": {
-            "value":"500"
-        }
-    }
-}`
+```json
+
+    {
+        "battery_voltage": 400,
+        "battery_current": 400,
+        "battery_temperature": 400,
+        "bms_fault": 1,
+        "gps_time": 400,
+        "gps_lat": 400,
+        "gps_lon": 400,
+        "gps_velocity_east":400,
+        "gps_velocity_north": 400,
+        "gps_velocity_up": 400,
+        "gps_speed": 400,
+        "solar_voltage": 400,
+        "solar_current": 400,
+        "motor_speed": 400
+}
+
+```
 

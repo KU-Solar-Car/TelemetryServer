@@ -45,18 +45,19 @@ def writeToFireBase():
         for col, sensor in zip(collections, SENSORS):
             for sec in buffer.keys():
                 data_per_timeframe = int(buffer[sec][sensor])
-                print(data_per_timeframe)
                 col.document("0").update({
                     str(sec) : data_per_timeframe
                 })
+        buffer.clear()
+        print("Buffer clear")
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno)
         print(e)
+        
 
-
-countdownToBufferClear = Timer(60.0, writeToFireBase())
+countdownToBufferClear = Timer(60.0, writeToFireBase)
 
 @app.route('/', methods=["GET"])
 def default():
@@ -93,7 +94,7 @@ def fromCar():
     auth = request.headers['Authentication']
     if auth != headerKey["Authentication"]:
         return f"An Error Occured: Authentication Failed", 401
-    
+    now = datetime.now()
     req_body = request.get_json()
     nowInSeconds = round((now - now.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds())
     if not COL_TELEMETRY.document(timestampStr).get().exists:
@@ -107,7 +108,7 @@ def fromCar():
                 lastRead[sensor] = req_body[sensor]
         if len(buffer) > (15*12) : #check buffer size and if it is greater than threshold
             writeToFireBase()
-            countdownToFireBase.cancel()
+            countdownToBufferClear.cancel()
             buffer.clear()
             return "Success, buffer limit reached but data uploaded, buffer cleared", 202
         return "Success, data added to buffer", 202
@@ -127,11 +128,13 @@ def read(date):
     """
     # dateFormat = "%Y-%m-%d"
     try:
+        if not COL_TELEMETRY.document(date).get().exists:
+            return "Document for specified date does not exist", 404
         data = dict()
         collections = COL_TELEMETRY.document(date).collections()
-        for col, sensor in zip(collections, SENSORS):
+        for col in collections:
             for doc in col.stream():
-                data[sensor] = doc.to_dict()
+                data[str(col.id)] = doc.to_dict()
         return jsonify(data), 200
     except Exception as e:
         return f"An Error Occured: {e}", 404

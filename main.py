@@ -20,7 +20,7 @@ db = firestore.client()
 COL_TELEMETRY = db.collection('telemetry')
 buffer = dict()
 lastRead = dict()
-countdownToBufferClear = Timer(60.0, writeToFireBase(timestampStr))
+
 dateTimeObj = datetime.now()
 timestampStr = dateTimeObj.strftime("%Y-%m-%d")
 
@@ -56,7 +56,7 @@ def writeToFireBase():
         print(e)
 
 
-
+countdownToBufferClear = Timer(60.0, writeToFireBase())
 
 @app.route('/', methods=["GET"])
 def default():
